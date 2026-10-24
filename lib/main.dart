@@ -42,19 +42,27 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _readingTicket = false;
   bool _checkInDone = false;
   String _scanResult = '';
+  bool _scanHandled = false;
+  
   List<String> listPeople = [];
 
   String dataQrCode = "";
 
   void _onDetect(BarcodeCapture capture) {
-    final List<Barcode> barcodes = capture.barcodes;
-    for (final barcode in barcodes) {
-      setState(() {
-        _scanResult = barcode.rawValue ?? '';
-        _readingTicket = false;
-        _checkInDone = true;
-      });
-    }
+    if (_scanHandled) return;
+
+    if (capture.barcodes.isEmpty) return;
+
+    final barcode = capture.barcodes.first;
+    final code = barcode.rawValue;
+
+    if (code == null) return;
+
+    setState(() {
+      _scanHandled = true;
+      _scanResult = code;
+      _readingTicket = false;
+    });
   }
 
   @override
@@ -69,7 +77,33 @@ class _MyHomePageState extends State<MyHomePage> {
         
       ),
       body: Center(
-        child: SingleChildScrollView( 
+        child: _readingTicket ? Column(
+          children: [
+            if (_readingTicket)
+              Column(
+                children: [
+                  const Text('Aponte a câmera para o QR Code'),
+
+                  Expanded(
+                    child: MobileScanner(
+                      onDetect: _onDetect,
+                    ),
+                  ),
+
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _readingTicket = false;
+                        _scanHandled = false;
+                      });
+                    },
+                    child: const Text('Cancelar'),
+                  ),
+                ],
+              )
+          ]
+        ) : 
+        SingleChildScrollView( 
         child: Column(
           mainAxisAlignment: .center,
           children: [
@@ -122,14 +156,16 @@ class _MyHomePageState extends State<MyHomePage> {
                     ElevatedButton(onPressed: (){
                       setState(() {
                         _readingTicket = true;
+                        _scanHandled = false;
+                        _scanResult = '';
                       });
                     },
-                    child: const Text('Ler QRCode'),)
+                    child: const Text('Ler QRCode de outro dispositivo'),)
                   ],
-
-                  
                   
                 ),
+
+                
                 
               ),
             ),
