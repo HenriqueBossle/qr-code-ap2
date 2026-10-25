@@ -40,6 +40,7 @@ void main() {
     await tester.pump();
     await tester.tap(find.text('Gerar QRCode'));
     await tester.pump();
+    await tester.ensureVisible(find.text('Ler QRCode de outro dispositivo'));
     await tester.tap(find.text('Ler QRCode de outro dispositivo'));
     await tester.pump();
 
