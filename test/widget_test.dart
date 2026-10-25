@@ -1,30 +1,64 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:qrcodeap2/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
+  testWidgets('generates a ticket after entering attendee details', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(const MyApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.byType(TextField), findsNWidgets(2));
+    expect(find.text('Gerar QRCode'), findsOneWidget);
+    expect(
+      tester.widget<ElevatedButton>(find.byType(ElevatedButton)).onPressed,
+      isNull,
+    );
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+    await tester.enterText(find.byType(TextField).at(0), 'Ada Lovelace');
+    await tester.enterText(find.byType(TextField).at(1), 'ada@example.com');
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    await tester.tap(find.text('Gerar QRCode'));
+    await tester.pump();
+
+    expect(find.text('Nome: Ada Lovelace'), findsOneWidget);
+    expect(find.text('E-mail: ada@example.com'), findsOneWidget);
+    expect(
+      find.text('Agora leia o QRCode para terminar o Check-In'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('shows the camera and adds a valid scan to the confirmed list', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const MyApp());
+    await tester.enterText(find.byType(TextField).at(0), 'Ada Lovelace');
+    await tester.enterText(find.byType(TextField).at(1), 'ada@example.com');
+    await tester.pump();
+    await tester.tap(find.text('Gerar QRCode'));
+    await tester.pump();
+    await tester.tap(find.text('Ler QRCode de outro dispositivo'));
+    await tester.pump();
+
+    expect(find.text('Aponte a câmera para o QR Code'), findsOneWidget);
+    expect(find.byType(MobileScanner), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    tester.widget<MobileScanner>(find.byType(MobileScanner)).onDetect!(
+      const BarcodeCapture(
+        barcodes: [Barcode(rawValue: 'CHECKIN|Ada Lovelace|ada@example.com')],
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(MobileScanner), findsNothing);
+    expect(find.text('Lista de 1 itens'), findsOneWidget);
+    expect(
+      find.text('QR Code lido: CHECKIN|Ada Lovelace|ada@example.com'),
+      findsOneWidget,
+    );
   });
 }
